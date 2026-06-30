@@ -10,6 +10,9 @@ app = Flask(__name__)
 app.secret_key = 'your-super-secret-key-change-this-in-production'
 
 # ===== تنظیمات دیتابیس PostgreSQL (Render) =====
+# استفاده از DATABASE_URL که از Render گرفتی
+# postgresql://love_38zp_user:m9bFRSh2U0gQYFRayKt1MyIHmJRc1qm3@dpg-d91omgreo5us739f58u0-a.oregon-postgres.render.com/love_38zp
+
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://love_38zp_user:m9bFRSh2U0gQYFRayKt1MyIHmJRc1qm3@dpg-d91omgreo5us739f58u0-a.oregon-postgres.render.com/love_38zp')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
@@ -39,18 +42,16 @@ class UserPage(db.Model):
             return True
         return check_password_hash(self.password_hash, password)
 
-# ===== تنظیمات آپلود با مسیر مطلق =====
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
+# ===== تنظیمات آپلود =====
+UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-MAX_CONTENT_LENGTH = 10 * 1024 * 1024
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10MB
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
-# ایجاد پوشه آپلود
+# ایجاد پوشه آپلود اگر وجود نداشت
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-print(f"📁 پوشه آپلود: {UPLOAD_FOLDER}")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -62,7 +63,7 @@ def serve_static(filename):
 
 @app.route('/static/uploads/<path:filename>')
 def serve_uploads(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    return send_from_directory('static/uploads', filename)
 
 # ===== صفحه اصلی =====
 @app.route('/')
@@ -73,14 +74,17 @@ def index():
 @app.route('/create', methods=['GET', 'POST'])
 def create_page():
     if request.method == 'POST':
+        # دریافت اطلاعات از فرم
         slug = request.form.get('slug', '').strip().lower()
         name = request.form.get('name', '').strip()
         text = request.form.get('text', '').strip()
         is_public = request.form.get('is_public') == 'on'
         password = request.form.get('password', '').strip()
         
+        # دریافت عکس از فرم
         image = request.files.get('image')
         
+        # اگر عکس نیومد، چک کن که شاید با اسم دیگه اومده باشه
         if not image or image.filename == '':
             image = request.files.get('image1')
         
@@ -101,7 +105,7 @@ def create_page():
         if not is_public and not password:
             return render_template('create.html', error='در حالت خصوصی، باید رمز عبور تعیین کنید')
         
-        # ===== ذخیره عکس =====
+        # ذخیره عکس
         image_path = None
         if image and image.filename and allowed_file(image.filename):
             try:
@@ -110,19 +114,11 @@ def create_page():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
                 image.save(filepath)
                 image_path = f'uploads/{unique_filename}'
-                print(f"✅ عکس ذخیره شد: {filepath}")
-                
-                # چک کن فایل واقعاً ذخیره شده
-                if os.path.exists(filepath):
-                    print(f"✅ فایل وجود دارد: {filepath}")
-                else:
-                    print(f"❌ فایل ذخیره نشد!")
+                print(f"✅ عکس ذخیره شد: {image_path}")
             except Exception as e:
                 print(f"❌ خطا در ذخیره عکس: {e}")
-        else:
-            print(f"⚠️ هیچ عکسی آپلود نشده")
         
-        # ===== ایجاد صفحه =====
+        # ایجاد صفحه جدید
         new_page = UserPage(
             slug=slug,
             name=name or slug,
@@ -135,27 +131,26 @@ def create_page():
         try:
             db.session.add(new_page)
             db.session.commit()
-            print(f"✅ صفحه ساخته شد: /page/{slug}")
+            print(f"✅ صفحه در دیتابیس ذخیره شد: /page/{slug}")
         except Exception as e:
             db.session.rollback()
-            print(f"❌ خطا: {e}")
-            return render_template('create.html', error='خطا در ذخیره اطلاعات')
+            print(f"❌ خطا در ذخیره دیتابیس: {e}")
+            return render_template('create.html', error='خطا در ذخیره اطلاعات، دوباره تلاش کنید')
         
         return redirect(url_for('view_page', slug=slug))
     
     return render_template('create.html')
 
-# ===== صفحه نمایش =====
+# ===== صفحه نمایش اختصاصی =====
 @app.route('/page/<slug>', methods=['GET', 'POST'])
 def view_page(slug):
     page = UserPage.query.filter_by(slug=slug).first_or_404()
     
-    print(f"🔍 صفحه: {slug}")
-    print(f"🖼️ مسیر عکس: {page.image_path}")
-    
+    # اگر صفحه عمومی هست
     if page.is_public:
         return render_template('view_page.html', page=page)
     
+    # اگر صفحه خصوصی هست
     if session.get(f'page_{slug}'):
         return render_template('view_page.html', page=page, unlocked=True)
     
@@ -169,7 +164,7 @@ def view_page(slug):
     
     return render_template('view_page.html', page=page, need_password=True)
 
-# ===== خروج =====
+# ===== خروج از صفحه خصوصی =====
 @app.route('/page/<slug>/logout')
 def logout_page(slug):
     session.pop(f'page_{slug}', None)

@@ -564,56 +564,11 @@
                 right: 12px !important;
             }
         }
-
-        /* ===== دکمه شروع ساده ===== */
-        #startBtn {
-            position: fixed;
-            bottom: 50%;
-            left: 50%;
-            transform: translate(-50%, 50%);
-            z-index: 1000;
-            padding: 20px 48px;
-            background: linear-gradient(135deg, #ff3366, #ff6b9d);
-            border: none;
-            border-radius: 99px;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 8px 40px rgba(255, 50, 100, 0.5);
-            transition: all 0.3s ease;
-            animation: pulseBtn 2s ease-in-out infinite;
-            display: none;
-        }
-        
-        #startBtn:hover {
-            transform: translate(-50%, 50%) scale(1.05);
-        }
-        
-        #startBtn:active {
-            transform: translate(-50%, 50%) scale(0.95);
-        }
-        
-        @keyframes pulseBtn {
-            0%, 100% { box-shadow: 0 8px 40px rgba(255, 50, 100, 0.5); }
-            50% { box-shadow: 0 8px 60px rgba(255, 50, 100, 0.8); }
-        }
-        
-        #startBtn .heart-icon {
-            display: inline-block;
-            animation: heartbeat 1.5s infinite;
-        }
-        
-        @keyframes heartbeat {
-            0%, 100% { transform: scale(1); }
-            25% { transform: scale(1.2); }
-            75% { transform: scale(1.2); }
-        }
     </style>
 </head>
 <body>
 
-    <!-- ===== اگر صفحه خصوصی هست و رمز نخورده ===== -->
+    <!-- ===== نیاز به رمز ===== -->
     {% if need_password %}
     <div class="min-h-screen flex items-center justify-center p-4">
         <div class="max-w-md w-full glass-card rounded-3xl p-8 text-center">
@@ -648,14 +603,8 @@
         </div>
     </div>
 
-    <!-- ===== نمایش صفحه (عمومی یا خصوصی با رمز وارد شده) ===== -->
+    <!-- ===== نمایش صفحه ===== -->
     {% else %}
-
-    <!-- ===== دکمه شروع ساده (جایگزین اوورلی) ===== -->
-    <button id="startBtn" onclick="startMusicSimple()">
-        <span class="heart-icon">❤️</span>
-        &nbsp; Click to Start Music
-    </button>
 
     <!-- ===== هدر ===== -->
     <header class="sticky-header" id="stickyHeader">
@@ -701,24 +650,6 @@
                     <span class="badge">❤️</span>
                 </div>
                 <p class="text-center mt-2 dancing-font text-sm text-gray-custom">{{ page.name or page.slug }}</p>
-                
-                <div class="photo-expand">
-                    <div class="photo-expand-content">
-                        <div class="flex items-start gap-3">
-                            <i class="fas fa-heart text-pink-500 text-lg mt-1"></i>
-                            <div>
-                                <h4 class="font-semibold text-sm">✨ The Smile That Lights Up My World</h4>
-                                <p class="text-xs leading-relaxed mt-1">
-                                    Every time you smile, the world becomes a brighter place. Your smile is like sunshine on a rainy day, warming my heart.
-                                </p>
-                                <div class="mt-2 flex gap-1 flex-wrap">
-                                    <span class="text-[10px] tag px-2 py-0.5 rounded-full">❤️ Beautiful</span>
-                                    <span class="text-[10px] tag px-2 py-0.5 rounded-full">✨ Magical</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <div class="polaroid-3d" onclick="togglePhotoExpand(this)" style="--rotate: -2deg;" id="photo2">
@@ -727,24 +658,6 @@
                     <span class="badge">🌟</span>
                 </div>
                 <p class="text-center mt-2 dancing-font text-sm text-gray-custom">{{ page.name or page.slug }}</p>
-                
-                <div class="photo-expand">
-                    <div class="photo-expand-content">
-                        <div class="flex items-start gap-3">
-                            <i class="fas fa-star text-pink-500 text-lg mt-1"></i>
-                            <div>
-                                <h4 class="font-semibold text-sm">🌟 The Eyes That Hold The Universe</h4>
-                                <p class="text-xs leading-relaxed mt-1">
-                                    Your eyes are like two galaxies, deep and full of mysteries. Every time I look into them, I discover a new world.
-                                </p>
-                                <div class="mt-2 flex gap-1 flex-wrap">
-                                    <span class="text-[10px] tag px-2 py-0.5 rounded-full">🌟 Deep</span>
-                                    <span class="text-[10px] tag px-2 py-0.5 rounded-full">🌙 Hypnotic</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
         {% else %}
@@ -871,8 +784,9 @@
         </div>
     </div>
 
+    <!-- ===== آهنگ با مسیر درست ===== -->
     <audio id="loveSong" preload="auto" crossorigin="anonymous">
-        <source src="/static/music/no_one_noticed.mp3" type="audio/mpeg">
+        <source src="{{ url_for('serve_music', filename='no_one_noticed.mp3') }}" type="audio/mpeg">
     </audio>
 
     <!-- ===== FAB ===== -->
@@ -910,7 +824,6 @@
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
         const timeDisplay = document.getElementById('timeDisplay');
-        const startBtn = document.getElementById('startBtn');
         
         let isPlaying = false;
         let musicStarted = false;
@@ -922,66 +835,41 @@
             audio.volume = 0.7;
             
             audio.addEventListener('loadedmetadata', function() {
-                startBtn.style.display = 'block';
+                console.log('✅ آهنگ لود شد');
+                // تلاش برای پخش خودکار
+                audio.play().catch(() => {
+                    console.log('ℹ️ برای پخش آهنگ روی دکمه کلیک کن');
+                });
             });
             
             audio.addEventListener('error', function(e) {
-                startBtn.textContent = '❌ خطا! دوباره کلیک کن';
-                startBtn.style.display = 'block';
+                console.error('❌ خطا در لود آهنگ:', e);
             });
-        }
-
-        function startMusicSimple() {
-            if (musicStarted) {
-                startBtn.style.display = 'none';
-                return;
-            }
-            if (!audio) return;
-            audio.play()
-                .then(() => {
-                    isPlaying = true;
-                    musicStarted = true;
-                    updateUI();
-                    startBtn.style.display = 'none';
-                })
-                .catch(err => {
-                    startBtn.textContent = '⚠️ کلیک کن تا دوباره تلاش کنم';
-                    startBtn.style.display = 'block';
-                    setTimeout(() => {
-                        audio.play()
-                            .then(() => {
-                                isPlaying = true;
-                                musicStarted = true;
-                                updateUI();
-                                startBtn.style.display = 'none';
-                            })
-                            .catch(() => {});
-                    }, 1000);
-                });
         }
 
         function toggleMusicSimple() {
             if (!audio) return;
-            if (!musicStarted) {
-                startBtn.style.display = 'block';
-                return;
-            }
+            
             if (isPlaying) {
                 audio.pause();
                 isPlaying = false;
+                updateUI();
             } else {
                 audio.play()
                     .then(() => {
                         isPlaying = true;
+                        musicStarted = true;
                         updateUI();
                     })
-                    .catch(err => {});
+                    .catch(err => {
+                        console.error('❌ خطا:', err);
+                        alert('خطا در پخش آهنگ!');
+                    });
             }
-            updateUI();
         }
 
         function updateUI() {
-            if (isPlaying && musicStarted) {
+            if (isPlaying) {
                 musicIcon.className = 'fas fa-pause text-lg sm:text-xl relative z-10';
                 playingDot.style.display = 'block';
                 progressBar.style.display = 'flex';
@@ -1017,15 +905,8 @@
             audio.currentTime = percent * audio.duration;
         }
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === ' ' && !e.target.matches('input, textarea, button')) {
-                e.preventDefault();
-                toggleMusicSimple();
-            }
-        });
-
         // =============================================
-        // FAB
+        // بقیه توابع
         // =============================================
         let fabOpen = false;
 
@@ -1258,22 +1139,7 @@
             setTimeout(() => {
                 loveGauge.style.width = '100%';
             }, 1000);
-
-            setTimeout(() => {
-                if (!musicStarted && audio) {
-                    startBtn.style.display = 'block';
-                }
-            }, 3000);
         });
-
-        let lastTouch = 0;
-        document.addEventListener('touchend', function(e) {
-            const now = Date.now();
-            if (now - lastTouch < 300) {
-                e.preventDefault();
-            }
-            lastTouch = now;
-        }, { passive: false });
 
         console.log('❤️ Made for you ❤️');
         console.log('🎵 No One Noticed - The Marías (از 1:37)');

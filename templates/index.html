@@ -565,79 +565,59 @@
             }
         }
 
-        /* ===== اوورلی شروع ===== */
-        #startOverlay {
+        /* ===== دکمه شروع ساده ===== */
+        #startBtn {
             position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: rgba(10, 10, 26, 0.92);
-            backdrop-filter: blur(16px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            cursor: pointer;
-            transition: opacity 1s ease, visibility 1s ease;
-        }
-        
-        #startOverlay.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-        
-        #startOverlay .heart-icon {
-            font-size: 72px;
-            animation: pulseHeart 1.5s ease-in-out infinite;
-            filter: drop-shadow(0 0 40px rgba(255, 50, 100, 0.4));
-        }
-        
-        @keyframes pulseHeart {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-        }
-        
-        #startOverlay h2 {
-            font-family: 'Dancing Script', cursive;
-            font-size: 2rem;
-            color: #ff6b9d;
-            margin-top: 20px;
-            animation: fadeInUp 1s ease 0.3s both;
-        }
-        
-        #startOverlay p {
-            color: #9ca3af;
-            font-size: 0.9rem;
-            margin-top: 8px;
-            animation: fadeInUp 1s ease 0.6s both;
-        }
-        
-        @keyframes fadeInUp {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        
-        #startOverlay .tap-hint {
-            margin-top: 24px;
-            padding: 10px 32px;
-            border: 1px solid rgba(255, 100, 150, 0.2);
+            bottom: 50%;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            z-index: 1000;
+            padding: 20px 48px;
+            background: linear-gradient(135deg, #ff3366, #ff6b9d);
+            border: none;
             border-radius: 99px;
-            color: #d1d5db;
-            font-size: 0.85rem;
-            background: rgba(255, 255, 255, 0.03);
-            animation: fadeInUp 1s ease 0.9s both;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 40px rgba(255, 50, 100, 0.5);
+            transition: all 0.3s ease;
+            animation: pulseBtn 2s ease-in-out infinite;
+            display: none;
+        }
+        
+        #startBtn:hover {
+            transform: translate(-50%, 50%) scale(1.05);
+        }
+        
+        #startBtn:active {
+            transform: translate(-50%, 50%) scale(0.95);
+        }
+        
+        @keyframes pulseBtn {
+            0%, 100% { box-shadow: 0 8px 40px rgba(255, 50, 100, 0.5); }
+            50% { box-shadow: 0 8px 60px rgba(255, 50, 100, 0.8); }
+        }
+        
+        #startBtn .heart-icon {
+            display: inline-block;
+            animation: heartbeat 1.5s infinite;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.2); }
+            75% { transform: scale(1.2); }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== اوورلی شروع (برای پخش آهنگ با تعامل کاربر) ===== -->
-    <div id="startOverlay" onclick="startMusic()">
-        <div class="heart-icon">❤️</div>
-        <h2>For You</h2>
-        <p>Every moment with you feels like a beautiful dream...</p>
-        <div class="tap-hint">👆 برای شروع کلیک کن</div>
-    </div>
+    <!-- ===== دکمه شروع ساده (جایگزین اوورلی) ===== -->
+    <button id="startBtn" onclick="startMusicSimple()">
+        <span class="heart-icon">❤️</span>
+        &nbsp; Click to Start Music
+    </button>
 
     <!-- ===== هدر ===== -->
     <header class="sticky-header" id="stickyHeader">
@@ -813,7 +793,7 @@
     <!-- ===== پلیر آهنگ ===== -->
     <!-- دکمه کنترل پلیر -->
     <div class="fixed bottom-24 right-4 sm:right-6 z-50">
-        <button onclick="toggleMusic()" id="musicBtn" 
+        <button onclick="toggleMusicSimple()" id="musicBtn" 
                 class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 
                        text-white shadow-lg shadow-pink-500/30 hover:scale-110 transition-all duration-300
                        flex items-center justify-center relative overflow-hidden group">
@@ -838,7 +818,7 @@
         </div>
     </div>
 
-    <!-- ===== آهنگ با مسیر درست برای رندر ===== -->
+    <!-- ===== آهنگ ===== -->
     <audio id="loveSong" preload="auto" crossorigin="anonymous">
         <source src="/static/music/no_one_noticed.mp3" type="audio/mpeg">
     </audio>
@@ -869,7 +849,7 @@
 
     <script>
         // =============================================
-        // 0. پلیر آهنگ با دیباگ کامل
+        // 0. پلیر آهنگ با روش ساده
         // =============================================
         const audio = document.getElementById('loveSong');
         const musicBtn = document.getElementById('musicBtn');
@@ -878,11 +858,11 @@
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
         const timeDisplay = document.getElementById('timeDisplay');
-        const overlay = document.getElementById('startOverlay');
+        const startBtn = document.getElementById('startBtn');
         
         let isPlaying = false;
         let musicStarted = false;
-        const startTime = 97; // 1:37 = 97 ثانیه
+        const startTime = 97; // 1:37
 
         // تنظیمات اولیه
         if (audio) {
@@ -893,74 +873,82 @@
             console.log('🎵 فایل آهنگ:', audio.src);
             
             audio.addEventListener('loadedmetadata', function() {
-                console.log('✅ آهنگ با موفقیت لود شد! مدت زمان:', audio.duration, 'ثانیه');
-            });
-            
-            audio.addEventListener('error', function(e) {
-                console.error('❌ خطا در لود آهنگ:', e);
-                console.log('🔍 مسیر فایل:', audio.src);
-                musicIcon.className = 'fas fa-exclamation-triangle text-lg sm:text-xl relative z-10';
+                console.log('✅ آهنگ لود شد! مدت:', audio.duration);
+                // نمایش دکمه شروع
+                startBtn.style.display = 'block';
             });
             
             audio.addEventListener('canplay', function() {
                 console.log('✅ آهنگ آماده پخش است');
             });
-        }
-
-        // ===== شروع آهنگ با کلیک روی اوورلی =====
-        function startMusic() {
-            if (musicStarted) return;
             
-            if (audio) {
-                audio.play()
-                    .then(() => {
-                        console.log('✅ پخش آهنگ با موفقیت شروع شد!');
-                        isPlaying = true;
-                        musicStarted = true;
-                        updateUI();
-                        overlay.classList.add('hidden');
-                    })
-                    .catch(err => {
-                        console.error('❌ خطا در شروع پخش:', err);
-                        // اگر ارور داشت، دوباره تلاش کن
-                        setTimeout(() => {
-                            audio.play()
-                                .then(() => {
-                                    console.log('✅ پخش آهنگ (تلاش مجدد) موفق بود!');
-                                    isPlaying = true;
-                                    musicStarted = true;
-                                    updateUI();
-                                    overlay.classList.add('hidden');
-                                })
-                                .catch(() => {});
-                        }, 500);
-                    });
-            }
+            audio.addEventListener('error', function(e) {
+                console.error('❌ خطا در لود آهنگ');
+                startBtn.textContent = '❌ خطا! دوباره کلیک کن';
+                startBtn.style.display = 'block';
+            });
         }
 
-        // ===== تاگل پخش/توقف (دکمه پایین) =====
-        function toggleMusic() {
+        // ===== شروع ساده =====
+        function startMusicSimple() {
+            if (musicStarted) {
+                startBtn.style.display = 'none';
+                return;
+            }
+            
             if (!audio) return;
             
-            // اگر هنوز آهنگ شروع نشده، اوورلی رو نشون بده
+            audio.play()
+                .then(() => {
+                    console.log('✅ پخش آهنگ شروع شد!');
+                    isPlaying = true;
+                    musicStarted = true;
+                    updateUI();
+                    startBtn.style.display = 'none';
+                })
+                .catch(err => {
+                    console.error('❌ خطا:', err);
+                    startBtn.textContent = '⚠️ کلیک کن تا دوباره تلاش کنم';
+                    startBtn.style.display = 'block';
+                    
+                    // تلاش مجدد بعد از ۱ ثانیه
+                    setTimeout(() => {
+                        audio.play()
+                            .then(() => {
+                                console.log('✅ پخش (تلاش مجدد) موفق بود!');
+                                isPlaying = true;
+                                musicStarted = true;
+                                updateUI();
+                                startBtn.style.display = 'none';
+                            })
+                            .catch(() => {});
+                    }, 1000);
+                });
+        }
+
+        // ===== تاگل پخش/توقف =====
+        function toggleMusicSimple() {
+            if (!audio) return;
+            
+            // اگر هنوز شروع نشده، دکمه شروع رو نشون بده
             if (!musicStarted) {
-                overlay.classList.remove('hidden');
+                startBtn.style.display = 'block';
                 return;
             }
             
             if (isPlaying) {
                 audio.pause();
                 isPlaying = false;
-                console.log('⏸️ آهنگ متوقف شد');
+                console.log('⏸️ متوقف شد');
             } else {
                 audio.play()
                     .then(() => {
-                        console.log('▶️ آهنگ شروع شد');
+                        console.log('▶️ شروع شد');
                         isPlaying = true;
                         updateUI();
                     })
                     .catch(err => {
-                        console.error('❌ خطا در پخش:', err);
+                        console.error('❌ خطا:', err);
                     });
             }
             updateUI();
@@ -1006,20 +994,19 @@
             audio.currentTime = percent * audio.duration;
         }
 
-        // کلید Space برای کنترل
+        // کلید Space
         document.addEventListener('keydown', function(e) {
             if (e.key === ' ' && !e.target.matches('input, textarea, button')) {
                 e.preventDefault();
-                toggleMusic();
+                toggleMusicSimple();
             }
         });
 
         console.log('🎵 آهنگ از ۱:۳۷ شروع میشه!');
-        console.log('💡 کلید Space رو بزن برای کنترل پخش');
-        console.log('👆 برای شروع آهنگ روی صفحه کلیک کن');
+        console.log('💡 کلید Space رو بزن برای کنترل');
 
         // =============================================
-        // 1. FAB (Floating Action Button)
+        // 1. FAB
         // =============================================
         let fabOpen = false;
 
@@ -1041,7 +1028,7 @@
         }
 
         // =============================================
-        // 2. TOGGLE PHOTO EXPAND
+        // 2. TOGGLE PHOTO
         // =============================================
         function togglePhotoExpand(element) {
             const expand = element.querySelector('.photo-expand');
@@ -1128,7 +1115,7 @@
         });
 
         // =============================================
-        // 5. SEND HEARTS (FAB)
+        // 5. SEND HEARTS
         // =============================================
         function sendHearts() {
             const emojis = ['❤️', '💖', '💗', '💝'];
@@ -1151,7 +1138,7 @@
         }
 
         // =============================================
-        // 6. SPARKLES (FAB)
+        // 6. SPARKLES
         // =============================================
         function createSparkles() {
             const colors = ['#ff3366', '#ff6b9d', '#ff9a9e', '#ff0066'];
@@ -1213,7 +1200,7 @@
         });
 
         // =============================================
-        // 8. TRIGGER LOVE EXPLOSION
+        // 8. LOVE EXPLOSION
         // =============================================
         function triggerLoveExplosion() {
             sendHearts();
@@ -1243,7 +1230,7 @@
         });
 
         // =============================================
-        // 10. SCROLL HEADER EFFECT
+        // 10. SCROLL HEADER
         // =============================================
         window.addEventListener('scroll', function() {
             const header = document.getElementById('stickyHeader');
@@ -1286,10 +1273,10 @@
                 loveGauge.style.width = '100%';
             }, 1000);
 
-            // اگر آهنگ لود نشد، اوورلی رو نشون بده
+            // اگر آهنگ لود نشد، دکمه رو نشون بده
             setTimeout(() => {
-                if (!musicStarted) {
-                    overlay.classList.remove('hidden');
+                if (!musicStarted && audio) {
+                    startBtn.style.display = 'block';
                 }
             }, 3000);
         });
@@ -1308,7 +1295,7 @@
 
         console.log('❤️ Made for you ❤️');
         console.log('🎵 No One Noticed - The Marías (از 1:37)');
-        console.log('👆 برای شروع آهنگ روی صفحه کلیک کن!');
+        console.log('👆 روی دکمه قرمز وسط کلیک کن تا آهنگ شروع بشه!');
     </script>
 </body>
 </html>

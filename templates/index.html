@@ -603,7 +603,7 @@
             </div>
         </div>
 
-        <!-- ===== گالری عکس با Static ===== -->
+        <!-- ===== گالری عکس ===== -->
         <div class="grid grid-cols-2 gap-4">
             <!-- عکس ۱ - لبخند -->
             <div class="polaroid-3d" onclick="togglePhotoExpand(this)" style="--rotate: 2deg;" id="photo1">
@@ -767,9 +767,9 @@
         </div>
     </div>
 
-    <!-- ===== اهنگ با مسیر درست ===== -->
-    <audio id="loveSong" preload="auto">
-        <source src="{{ url_for('static', filename='music/no_one_noticed.mp3') }}" type="audio/mpeg">
+    <!-- ===== آهنگ با مسیر درست برای رندر ===== -->
+    <audio id="loveSong" preload="auto" crossorigin="anonymous">
+        <source src="/static/music/no_one_noticed.mp3" type="audio/mpeg">
     </audio>
 
     <!-- ===== دکمه شناور (FAB) ===== -->
@@ -798,7 +798,7 @@
 
     <script>
         // =============================================
-        // 0. پلیر آهنگ
+        // 0. پلیر آهنگ با دیباگ کامل
         // =============================================
         const audio = document.getElementById('loveSong');
         const musicBtn = document.getElementById('musicBtn');
@@ -816,33 +816,70 @@
             audio.currentTime = startTime;
             audio.loop = true;
             audio.volume = 0.7;
+            
+            // دیباگ: نمایش وضعیت لود آهنگ
+            console.log('🎵 فایل آهنگ:', audio.src);
+            
+            audio.addEventListener('loadedmetadata', function() {
+                console.log('✅ آهنگ با موفقیت لود شد! مدت زمان:', audio.duration, 'ثانیه');
+            });
+            
+            audio.addEventListener('error', function(e) {
+                console.error('❌ خطا در لود آهنگ:', e);
+                console.log('🔍 مسیر فایل:', audio.src);
+                musicIcon.className = 'fas fa-exclamation-triangle text-lg sm:text-xl relative z-10';
+            });
+            
+            audio.addEventListener('canplay', function() {
+                console.log('✅ آهنگ آماده پخش است');
+            });
         }
 
-        // استارت اتوماتیک
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                if (audio) {
-                    audio.play().catch(err => {
-                        console.log('ℹ️ برای پخش آهنگ، روی دکمه کلیک کن');
-                    });
+        // استارت اتوماتیک با تلاش مجدد
+        function tryAutoPlay() {
+            if (!audio) return;
+            
+            audio.play()
+                .then(() => {
+                    console.log('✅ پخش خودکار موفقیت‌آمیز بود');
                     isPlaying = true;
                     updateUI();
-                }
-            }, 1500);
+                })
+                .catch(err => {
+                    console.log('ℹ️ پخش خودکار ممکن نیست، روی دکمه کلیک کن:', err.message);
+                    // تلاش مجدد بعد از ۲ ثانیه
+                    setTimeout(() => {
+                        if (!isPlaying) {
+                            audio.play()
+                                .then(() => {
+                                    console.log('✅ پخش خودکار (تلاش مجدد) موفق بود');
+                                    isPlaying = true;
+                                    updateUI();
+                                })
+                                .catch(() => {});
+                        }
+                    }, 2000);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(tryAutoPlay, 1500);
         });
 
         // نمایش نوار پیشرفت
         if (audio) {
             audio.addEventListener('timeupdate', function() {
-                const progress = (audio.currentTime / audio.duration) * 100;
-                progressFill.style.width = progress + '%';
-                
-                const mins = Math.floor(audio.currentTime / 60);
-                const secs = Math.floor(audio.currentTime % 60);
-                timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-                
-                if (audio.currentTime >= audio.duration - 1) {
-                    audio.currentTime = startTime;
+                if (audio.duration) {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    progressFill.style.width = progress + '%';
+                    
+                    const mins = Math.floor(audio.currentTime / 60);
+                    const secs = Math.floor(audio.currentTime % 60);
+                    timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (audio.currentTime >= audio.duration - 1) {
+                        audio.currentTime = startTime;
+                    }
                 }
             });
         }
@@ -853,11 +890,18 @@
             if (isPlaying) {
                 audio.pause();
                 isPlaying = false;
+                console.log('⏸️ آهنگ متوقف شد');
             } else {
-                audio.play().catch(err => {
-                    console.log('❌ خطا در پخش:', err);
-                });
-                isPlaying = true;
+                audio.play()
+                    .then(() => {
+                        console.log('▶️ آهنگ شروع شد');
+                        isPlaying = true;
+                        updateUI();
+                    })
+                    .catch(err => {
+                        console.error('❌ خطا در پخش:', err);
+                        alert('خطا در پخش آهنگ! مطمئن شو فایل وجود داره.');
+                    });
             }
             updateUI();
         }
@@ -876,19 +920,12 @@
         }
 
         function seekSong(e) {
-            if (!audio) return;
+            if (!audio || !audio.duration) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const width = rect.width;
             const percent = x / width;
             audio.currentTime = percent * audio.duration;
-        }
-
-        if (audio) {
-            audio.addEventListener('error', function(e) {
-                console.log('❌ خطا در پخش آهنگ. مطمئن شو فایل وجود داره.');
-                musicIcon.className = 'fas fa-music-slash text-lg sm:text-xl relative z-10';
-            });
         }
 
         // کلید Space برای کنترل
